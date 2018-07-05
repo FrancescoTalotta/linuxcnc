@@ -24,3 +24,7 @@ Refer to the file 'docs/src/code/building-linuxcnc.txt' for information
 about building and running the software, or look here:
 
 http://linuxcnc.org/docs/devel/html/code/building-linuxcnc.html
+
+# Mods
+
+Merged with dgarr/external_offsets
