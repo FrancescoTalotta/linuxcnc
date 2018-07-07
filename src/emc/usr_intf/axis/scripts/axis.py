@@ -685,6 +685,7 @@ class LivePlotter:
         self.notifications_clear = False
         self.notifications_clear_info = False
         self.notifications_clear_error = False
+        self.reload_pin = False
 
     def start(self):
         if self.running.get(): return
@@ -845,6 +846,11 @@ class LivePlotter:
                      root_window.tk.call("pause_image_override")
                  else:
                      root_window.tk.call("pause_image_normal")
+            reload_pin = comp["reload"]
+            if self.reload_pin != reload_pin:
+                 self.reload_pin = reload_pin
+                 if self.reload_pin:
+                     commands.reload_file()
         vupdate(vars.task_mode, self.stat.task_mode)
         vupdate(vars.task_state, self.stat.task_state)
         vupdate(vars.task_paused, self.stat.task_paused)
@@ -1248,6 +1254,7 @@ def open_file_guts(f, filtered=False, addrecent=True):
             pass
         o.tkRedraw()
         root_window.tk.call("set_mode_from_tab")
+        calc_cut_time()
 
 tabs_mdi = str(root_window.tk.call("set", "_tabs_mdi"))
 tabs_manual = str(root_window.tk.call("set", "_tabs_manual"))
@@ -1807,6 +1814,30 @@ def run_warn():
             1, _("Run Anyway"), _("Cancel")))
     return 0
 
+def calc_cut_time(event=None):
+    ext = os.path.splitext(loaded_file)[1]
+    program_filter = None
+    if ext:
+        program_filter = inifile.find("FILTER", ext[1:])
+    name = os.path.basename(loaded_file)
+    lines = int(widgets.text.index("end").split(".")[0])-2
+    if vars.metric.get():
+        conv = 1
+        units = _("mm")
+        fmt = "%.3f"
+    else:
+        conv = 1/25.4
+        units = _("in")
+        fmt = "%.4f"
+
+    mf = vars.max_speed.get()
+    gt = (sum(dist(l[1][:3], l[2][:3])/min(mf, l[3]) for l in o.canon.feed) +
+    sum(dist(l[1][:3], l[2][:3])/min(mf, l[3])  for l in o.canon.arcfeed) +
+    sum(dist(l[1][:3], l[2][:3])/mf  for l in o.canon.traverse) +
+    o.canon.dwell_time
+    )
+    comp['cut_time'] = int(gt*1.3/60)
+
 def reload_file(refilter=True):
     if running(): return
     s.poll()
@@ -1823,6 +1854,7 @@ def reload_file(refilter=True):
         open_file_guts(tempfile, True, False)
     if line:
         o.set_highlight_line(line)
+    calc_cut_time()
 
 def ja_from_rbutton():
     # radiobuttons for joints set ja_rbutton to numeric value [0,MAX_JOINTS)
@@ -2195,6 +2227,7 @@ class TclCommands(nf.TclCommands):
 
     def reload_file(*event):
         reload_file()
+        calc_cut_time()
 
     def edit_program(*event):
         if loaded_file is None:
@@ -3747,6 +3780,8 @@ if hal_present == 1 :
     comp.newpin("notifications-clear-info",hal.HAL_BIT,hal.HAL_IN)
     comp.newpin("notifications-clear-error",hal.HAL_BIT,hal.HAL_IN)
     comp.newpin("resume-inhibit",hal.HAL_BIT,hal.HAL_IN)
+    comp.newpin("reload",hal.HAL_BIT,hal.HAL_IN)
+    comp.newpin("cut_time",hal.HAL_U32,hal.HAL_OUT)
 
     vars.has_ladder.set(hal.component_exists('classicladder_rt'))
 
