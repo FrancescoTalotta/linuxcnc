@@ -28,3 +28,4 @@ http://linuxcnc.org/docs/devel/html/code/building-linuxcnc.html
 # Mods
 
 Merged with dgarr/external_offsets
+Merged with the mods in https://github.com/LinuxCNC/linuxcnc/issues/411. Now the machine can handle till 256 tools
